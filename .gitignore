@@ -1,3 +1,10 @@
+*.jar
+*.log
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.pytest_cache/
 result.xml
-__pycache__
-.pytest_cache
+.DS_Store
+.env
