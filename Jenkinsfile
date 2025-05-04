@@ -42,7 +42,13 @@ pipeline {
         stage('Iniciar Wiremock') {
             steps {
                 echo 'Iniciando Wiremock...'
-                sh 'ls -la test/wiremock'
+                sh '''
+                   if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
+                    echo "Descargando Wiremock JAR..."
+                    curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar \
+                       -o test/wiremock/wiremock-standalone-2.27.2.jar
+                   fi
+                '''
                 sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 8081 --root-dir test/wiremock &'
                 sh 'sleep 10'
                 echo 'Comprobando si Wiremock responde...'
@@ -58,6 +64,7 @@ pipeline {
         
         stage('Service') {
            steps {
+              sh 'sleep 10'
               sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
             }
         }
