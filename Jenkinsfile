@@ -30,7 +30,7 @@ pipeline {
 
         stage('Unit') {
             steps {
-                sh 'pytest test/unit --junitxml=result.xml'
+                sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
             }
         }
     }
