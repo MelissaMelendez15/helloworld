@@ -27,5 +27,11 @@ pipeline {
                 echo 'Etapa de build vacia por ahora.'
             }
         }
+
+        stage('Unit') {
+            steps {
+                sh 'pytest test/unit --junitxml=result.xml'
+            }
+        }
     }
 }
