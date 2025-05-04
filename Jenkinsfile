@@ -55,5 +55,18 @@ pipeline {
                 sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
             }
         }
+        
+        stage('Service') {
+           steps {
+              sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
+            }
+        }
+
+    }
+
+    post {
+        always {
+            junit 'results-*.xml'
+        }
     }
 }
