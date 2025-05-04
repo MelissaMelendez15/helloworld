@@ -34,8 +34,9 @@ pipeline {
 
         stage('Iniciar Flask') {
             steps {
-                sh 'PYTHONPATH=. nohup python3 app/calc.py &'
+                sh 'PYTHONPATH=. nohup python3 app/api.py &'
                 sh 'sleep 5'
+                sh 'curl -v http://localhost:5000/ || echo "Flask no respondió"'
             }
         }
 
@@ -43,6 +44,7 @@ pipeline {
             steps {
                 echo 'Iniciando Wiremock...'
                 sh '''
+                   mkdir -p test/wiremock
                    if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
                     echo "Descargando Wiremock JAR..."
                     curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar \
@@ -64,7 +66,8 @@ pipeline {
         
         stage('Service') {
            steps {
-              sh 'sleep 10'
+              sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
+              sh 'sleep 5'
               sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
             }
         }
