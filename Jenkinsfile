@@ -18,7 +18,6 @@ pipeline {
         stage('Verificar workspace') {
             steps {
                 sh 'echo $WORKSPACE'
-                sh 'rm -rf $WORKSPACE/*'
             }
         }
 
@@ -33,5 +32,7 @@ pipeline {
                 sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
             }
         }
+
+        
     }
 }
