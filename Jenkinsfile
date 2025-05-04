@@ -49,7 +49,7 @@ pipeline {
                        -o test/wiremock/wiremock-standalone-2.27.2.jar
                    fi
                 '''
-                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 8081 --root-dir test/wiremock &'
+                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &'
                 sh 'sleep 10'
                 echo 'Comprobando si Wiremock responde...'
                 sh 'curl -v http://localhost:8081/__admin || echo "Wiremock no respondió"'
