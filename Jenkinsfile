@@ -12,7 +12,7 @@ pipeline {
                 echo '¡Hola desde Jenkins! Primera etapa OK'
             }
         }
-        
+
         stage('Clonar repositorio') {
             steps {
                 git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
@@ -57,26 +57,31 @@ pipeline {
                 sh 'curl -v http://localhost:9090/__admin || echo "Wiremock no respondió"'
             }
         }
-        
-        stage('Unit') {
-            steps {
-                sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
-            }
-        }
-        
-        stage('Service') {
-           steps {
-              sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
-              sh 'sleep 5'
-              sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
-            }
-        }
 
+        stage('Tests en paralelo') {
+            parallel {
+                stage('Unit') {
+                    steps {
+                        sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
+                    }
+                }
+
+                stage('Service') {
+                    steps {
+                       sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
+                       sh 'sleep 5'
+                       sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
+                    }
+                }
+            }
+        }
     }
 
     post {
         always {
             junit 'results-*.xml'
+            junit 'results-unit.xml'
+            junit 'results-service.xml'
         }
     }
 }
