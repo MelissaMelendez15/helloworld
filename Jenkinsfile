@@ -34,7 +34,7 @@ pipeline {
 
         stage('Iniciar Flask') {
             steps {
-                sh 'nohup python3 app/calc.py &'
+                sh 'PYTHONPATH=. nohup python3 app/calc.py &'
                 sh 'sleep 5'
             }
         }
@@ -42,7 +42,7 @@ pipeline {
         stage('Iniciar Wiremock') {
             steps {
                 echo 'Iniciando Wiremock...'
-                sh 'ls -la wiremock'
+                sh 'ls -la test/wiremock'
                 sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 8081 --root-dir test/wiremock &'
                 sh 'sleep 10'
                 echo 'Comprobando si Wiremock responde...'
