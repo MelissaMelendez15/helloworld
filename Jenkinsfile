@@ -80,8 +80,7 @@ pipeline {
     post {
         always {
             junit 'results-*.xml'
-            junit 'results-unit.xml'
-            junit 'results-service.xml'
+            cleanWs()
         }
     }
 }
