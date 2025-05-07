@@ -8,6 +8,7 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
                 stash includes: '**', name: 'workspace-clonado'
+                echo 'Repositorio Clonado y guardado.'
             }
         }
 
@@ -17,6 +18,19 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
                 sh 'pip3 install flask pytest requests --break-system-packages'
+                echo 'Dependencias instaladas correctamente'
+            }
+        }
+
+         stage('Build') {
+            agent { label 'agente-build' }
+            steps {
+                sh 'whoami && hostname && pwd'
+                unstash 'workspace-clonado'
+                echo 'Build: Verificando archivos clonados...'
+                ls -l
+                stash includes: '**', name: 'workspace-build'
+                echo 'Build completado y guardado'
             }
         }
 
