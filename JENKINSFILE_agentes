@@ -1,0 +1,14 @@
+pipeline {
+    agent none
+
+    stages {
+        stage('Clonar repositorio') {
+            agent { label 'agente-clonador' }
+            steps {
+                sh 'whoami && hostname && pwd'
+                git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
+                stash includes: '**', name: 'workspace-clonado'
+            }
+        }
+    }
+}
