@@ -58,7 +58,7 @@ pipeline {
             agent { label 'agente-deploy' }
             steps {
                sh 'whoami && hostname && pwd'
-                sh '''
+               sh '''
                    mkdir -p test/wiremock
                    if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
                     echo "Descargando Wiremock JAR..."
@@ -81,5 +81,43 @@ pipeline {
             }
         }
 
+        stage('Tests en paralelo') {
+            parallel {
+                stage('Tests Unitarios') {
+                    agent { label 'agente-build' }
+                    steps {
+                        sh 'whoami && hostname && pwd'
+                        unstash 'workspace-build'
+                        echo 'Ejecutamos test unitarios...'
+                        sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
+                    }
+                }
+
+                stage('Tests Service') {
+                    agent { label 'agente-deploy' }
+                    steps {
+                       sh 'whoami && hostname && pwd'
+                       unstash 'workspace-build'
+                       echo 'Verificando Flask antes del test de servicio...'
+                       sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
+                       sh 'sleep 5'
+                       echo 'Ejecutando test de servicio...'
+                       sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
+                    }
+                }
+            }
+        }
+
+    }
+
+    post {
+        always {
+            junit 'results-*.xml'
+            echo 'Pipeline completado. Limpiando workspace...'
+            cleanWs()
+        }
+        failure {
+            echo 'El pipeline ha fallado. Revisa los errores.'
+        }
     }
 }
