@@ -54,5 +54,32 @@ pipeline {
             }
         }
 
+        stage('Iniciar Wiremock') {
+            agent { label 'agente-deploy' }
+            steps {
+               sh 'whoami && hostname && pwd'
+                sh '''
+                   mkdir -p test/wiremock
+                   if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
+                    echo "Descargando Wiremock JAR..."
+                    curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar \
+                       -o test/wiremock/wiremock-standalone-2.27.2.jar
+                   fi
+                '''
+                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &'
+                sh 'sleep 10'
+                sh '''
+                    if curl -s http://localhost:9090/__admin; then
+                       echo "Wimerock iniciado correctamente"
+                    else
+                       echo "Error: Wimerock no inició correctamente."
+                       exit 1
+
+                       fi
+                   '''
+
+            }
+        }
+
     }
 }
