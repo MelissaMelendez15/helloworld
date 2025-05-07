@@ -28,7 +28,7 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
                 echo 'Build: Verificando archivos clonados...'
-                ls -l
+                sh 'ls -l'
                 stash includes: '**', name: 'workspace-build'
                 echo 'Build completado y guardado'
             }
