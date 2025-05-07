@@ -41,7 +41,7 @@ pipeline {
                 unstash 'workspace-build'
                 echo 'Build: Verificando archivos clonados...'
                 sh 'PYTHONPATH=. nohup python3 app/api.py &'
-                sh 'sleep'
+                sh 'sleep 5'
                 sh '''
                    if curl -s http://localhost:5000; then
                       echo "Flask iniciado correctamente."
