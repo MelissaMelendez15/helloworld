@@ -10,5 +10,15 @@ pipeline {
                 stash includes: '**', name: 'workspace-clonado'
             }
         }
+
+        stage('Instalar dependencias') {
+            agent { label 'agente-build' }
+            steps {
+                sh 'whoami && hostname && pwd'
+                unstash 'workspace-clonado'
+                sh 'pip3 install flask pytest requests --break-system-packages'
+            }
+        }
+
     }
 }
