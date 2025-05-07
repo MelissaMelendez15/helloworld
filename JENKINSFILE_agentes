@@ -22,7 +22,7 @@ pipeline {
             }
         }
 
-         stage('Build') {
+        stage('Build') {
             agent { label 'agente-build' }
             steps {
                 sh 'whoami && hostname && pwd'
@@ -31,6 +31,26 @@ pipeline {
                 sh 'ls -l'
                 stash includes: '**', name: 'workspace-build'
                 echo 'Build completado y guardado'
+            }
+        }
+
+        stage('Iniciar Flask') {
+            agent { label 'agente-deploy' }
+            steps {
+                sh 'whoami && hostname && pwd'
+                unstash 'workspace-build'
+                echo 'Build: Verificando archivos clonados...'
+                sh 'PYTHONPATH=. nohup python3 app/api.py &'
+                sh 'sleep'
+                sh '''
+                   if curl -s http://localhost:5000; then
+                      echo "Flask iniciado correctamente."
+                   else
+                      echo "Error: Flask no inició correctamente..."
+                      exit 1
+
+                    fi
+                '''
             }
         }
 
