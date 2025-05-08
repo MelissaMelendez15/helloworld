@@ -41,20 +41,18 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
-                echo 'Build: Verificando archivos clonados...'
-                sh 'ls -l app/'
-                sh 'PYTHONPATH=. nohup python3 app/api.py &'
-                sh 'sleep 5'
+                echo 'Inciando Flask...'
                 sh '''
+                   nohup python3 app/api.py > flask.log 2>&1 &
+                   sleep 5
                    if curl -s http://localhost:5000; then
-                      echo "Flask iniciado correctamente."
-                   else
-                      echo "Error: Flask no inició correctamente..."
-                      exit 1
-
-                    fi
-                '''
-                
+                echo "Flask iniciado correctamente."
+                else
+                   echo "Error: Flask no inició correctamente..."
+                   cat flask.log
+                   exit 1
+                fi
+            '''
             }
         }
 
@@ -62,26 +60,19 @@ pipeline {
             agent { label 'agente-deploy' }
             steps {
                sh 'whoami && hostname && pwd'
+               unstash 'workspace-build'
+               echo 'Iniciando Wiremock...'
                sh '''
-                   mkdir -p test/wiremock
-                   if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
-                    echo "Descargando Wiremock JAR..."
-                    curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar \
-                       -o test/wiremock/wiremock-standalone-2.27.2.jar
-                   fi
-                '''
-                sh 'ls -l test/wiremock/'
-                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &'
-                sh 'sleep 10'
-                sh '''
-                    if curl -s http://localhost:9090/__admin; then
-                       echo "Wimerock iniciado correctamente"
-                    else
-                       echo "Error: Wimerock no inició correctamente."
-                       exit 1
-
-                       fi
-                   '''
+                  nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
+                  sleep 5
+                if curl -s http://localhost:9090/__admin; then
+                  echo "Wiremock iniciado correctamente."
+                else
+                    echo "Error: Wiremock no inició correctamente..."
+                    cat wiremock.log
+                    exit 1
+                fi
+            '''
 
             }
         }
