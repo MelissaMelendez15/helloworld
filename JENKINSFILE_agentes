@@ -116,6 +116,7 @@ pipeline {
 
     post {
         always {
+            node('agldente-build')
             junit 'results-*.xml'
             echo 'Pipeline completado. Limpiando workspace...'
             cleanWs()
