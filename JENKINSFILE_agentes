@@ -7,6 +7,7 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
+                sh'ls -l'
                 stash includes: '**', name: 'workspace-clonado'
                 echo 'Repositorio Clonado y guardado.'
             }
@@ -17,6 +18,7 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
+                sh 'ls -l app/'
                 sh 'pip3 install flask pytest requests --break-system-packages'
                 echo 'Dependencias instaladas correctamente'
             }
@@ -28,7 +30,7 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
                 echo 'Build: Verificando archivos clonados...'
-                sh 'ls -l'
+                sh 'ls -l app/'
                 stash includes: '**', name: 'workspace-build'
                 echo 'Build completado y guardado'
             }
@@ -40,6 +42,7 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
                 echo 'Build: Verificando archivos clonados...'
+                sh 'ls -l app/'
                 sh 'PYTHONPATH=. nohup python3 app/api.py &'
                 sh 'sleep 5'
                 sh '''
@@ -51,6 +54,7 @@ pipeline {
 
                     fi
                 '''
+                
             }
         }
 
@@ -66,6 +70,7 @@ pipeline {
                        -o test/wiremock/wiremock-standalone-2.27.2.jar
                    fi
                 '''
+                sh 'ls -l test/wiremock/'
                 sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &'
                 sh 'sleep 10'
                 sh '''
@@ -88,6 +93,7 @@ pipeline {
                     steps {
                         sh 'whoami && hostname && pwd'
                         unstash 'workspace-build'
+                        sh 'ls -l app/'
                         echo 'Verificamos instalación de pytest...'
                         sh 'pip3 install pytest --break-system-packages || echo "Pytest ya está instalado."'
                         echo 'Ejecutamos tests unitarios...'
@@ -100,6 +106,7 @@ pipeline {
                     steps {
                        sh 'whoami && hostname && pwd'
                        unstash 'workspace-build'
+                       sh 'ls -l app/'
                        echo 'Verificando Flask antes del test de servicio...'
                        sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio."'
                        sh 'sleep 5'
@@ -116,9 +123,6 @@ pipeline {
 
     post {
         always {
-            node('agente-build')
-            junit 'results-*.xml'
-            echo 'Pipeline completado. Limpiando workspace...'
             cleanWs()
         }
         failure {
