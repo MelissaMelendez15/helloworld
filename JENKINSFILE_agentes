@@ -41,39 +41,54 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
-                echo 'Inciando Flask...'
+                echo 'Limpieza de procesos previos de Flask y Wiremock...'
                 sh '''
-                   nohup python3 app/api.py > flask.log 2>&1 &
-                   sleep 5
+                    pkill -f "python3 app/api.py" || true
+                    pkill -f "java -jar test/wiremock/wiremock-standalone-2.27.2.jar" || true
+                '''
+                echo 'Iniciando Flask...'
+                sh 'PYTHONPATH=. nohup python3 app/api.py > flask.log 2>&1 &'
+                sh 'sleep 5'
+                sh '''
                    if curl -s http://localhost:5000; then
-                echo "Flask iniciado correctamente."
-                else
-                   echo "Error: Flask no inició correctamente..."
-                   cat flask.log
-                   exit 1
-                fi
-            '''
+                      echo "Flask iniciado correctamente."
+                   else
+                      echo "Error: Flask no inició correctamente..."
+                      cat flask.log
+                      exit 1
+                    fi
+                '''
             }
         }
 
         stage('Iniciar Wiremock') {
             agent { label 'agente-deploy' }
             steps {
-               sh 'whoami && hostname && pwd'
-               unstash 'workspace-build'
-               echo 'Iniciando Wiremock...'
-               sh '''
-                  nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
-                  sleep 5
-                if curl -s http://localhost:9090/__admin; then
-                  echo "Wiremock iniciado correctamente."
-                else
-                    echo "Error: Wiremock no inició correctamente..."
-                    cat wiremock.log
-                    exit 1
-                fi
-            '''
-
+                sh 'whoami && hostname && pwd'
+                echo 'Limpieza de procesos previos de Wiremock...'
+                sh '''
+                    pkill -f "java -jar test/wiremock/wiremock-standalone-2.27.2.jar" || true
+                '''
+                echo 'Iniciando Wiremock...'
+                sh '''
+                   mkdir -p test/wiremock
+                   if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
+                    echo "Descargando Wiremock JAR..."
+                    curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar \
+                       -o test/wiremock/wiremock-standalone-2.27.2.jar
+                   fi
+                '''
+                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &'
+                sh 'sleep 10'
+                sh '''
+                    if curl -s http://localhost:9090/__admin; then
+                       echo "Wiremock iniciado correctamente."
+                    else
+                       echo "Error: Wiremock no inició correctamente."
+                       cat wiremock.log
+                       exit 1
+                    fi
+                '''
             }
         }
 
@@ -84,7 +99,6 @@ pipeline {
                     steps {
                         sh 'whoami && hostname && pwd'
                         unstash 'workspace-build'
-                        sh 'ls -l app/'
                         echo 'Verificamos instalación de pytest...'
                         sh 'pip3 install pytest --break-system-packages || echo "Pytest ya está instalado."'
                         echo 'Ejecutamos tests unitarios...'
@@ -97,7 +111,6 @@ pipeline {
                     steps {
                        sh 'whoami && hostname && pwd'
                        unstash 'workspace-build'
-                       sh 'ls -l app/'
                        echo 'Verificando Flask antes del test de servicio...'
                        sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio."'
                        sh 'sleep 5'
