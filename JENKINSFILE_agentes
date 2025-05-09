@@ -7,7 +7,7 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
-                sh'ls -l'
+                sh 'ls -l'
                 stash includes: '**', name: 'workspace-clonado'
                 echo 'Repositorio Clonado y guardado.'
             }
@@ -78,7 +78,7 @@ pipeline {
                        -o test/wiremock/wiremock-standalone-2.27.2.jar
                    fi
                 '''
-                ssh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &'
+                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &'
                 sh 'sleep 10'
                 echo 'Verificando Wiremock...'
                 sh '''
