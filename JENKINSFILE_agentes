@@ -39,7 +39,7 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
                 echo 'Iniciando Flask...'
-                sh 'PYTHONPATH=. nohup python3 app/api.py > flask.log 2>&1 &'
+                sh 'PYTHONPATH=. nohup python3 app/api.py --host=0.0.0.0 --port=5000 > flask.log 2>&1 &'
                 sh 'sleep 5'
                 sh 'curl -v http://localhost:5000/ || echo "Flask no respondió"'
 
