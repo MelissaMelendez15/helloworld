@@ -41,16 +41,16 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
-                echo 'Limpieza de procesos previos de Flask y Wiremock...'
+                echo 'Limpieza de procesos previos de Flask...'
                 sh '''
                     pkill -f "python3 app/api.py" || true
-                    pkill -f "java -jar test/wiremock/wiremock-standalone-2.27.2.jar" || true
                 '''
                 echo 'Iniciando Flask...'
                 sh 'PYTHONPATH=. nohup python3 app/api.py > flask.log 2>&1 &'
                 sh 'sleep 5'
+                echo 'Verificando Flask...'
                 sh '''
-                   if curl -s http://localhost:5000; then
+                   if curl -s http://localhost:5000/ | grep "Hello from the Calculator"; then
                       echo "Flask iniciado correctamente."
                    else
                       echo "Error: Flask no inició correctamente..."
@@ -78,8 +78,9 @@ pipeline {
                        -o test/wiremock/wiremock-standalone-2.27.2.jar
                    fi
                 '''
-                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &'
+                ssh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &'
                 sh 'sleep 10'
+                echo 'Verificando Wiremock...'
                 sh '''
                     if curl -s http://localhost:9090/__admin; then
                        echo "Wiremock iniciado correctamente."
@@ -99,9 +100,7 @@ pipeline {
                     steps {
                         sh 'whoami && hostname && pwd'
                         unstash 'workspace-build'
-                        echo 'Verificamos instalación de pytest...'
-                        sh 'pip3 install pytest --break-system-packages || echo "Pytest ya está instalado."'
-                        echo 'Ejecutamos tests unitarios...'
+                        echo 'Ejecutando test unitarios...'
                         sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml || echo "Error en test de servicio."'
                     }
                 }
