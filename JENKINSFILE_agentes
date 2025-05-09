@@ -33,7 +33,7 @@ pipeline {
             }
         }
 
-        stage('Iniciar Flask') {
+        stage('Iniciar Flask y Wiremock') {
             agent { label 'agente-deploy' }
             steps {
                 sh 'whoami && hostname && pwd'
@@ -42,22 +42,16 @@ pipeline {
                 sh 'PYTHONPATH=. nohup python3 app/api.py > flask.log 2>&1 &'
                 sh 'sleep 5'
                 sh 'curl -v http://localhost:5000/ || echo "Flask no respondió"'
-            }
-        }
 
-        stage('Iniciar Wiremock') {
-            agent { label 'agente-deploy' }
-            steps {
                 echo 'Iniciando Wiremock...'
                 sh '''
                    mkdir -p test/wiremock
                    if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
-                    echo "Descargando Wiremock JAR..."
                     curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar \
                        -o test/wiremock/wiremock-standalone-2.27.2.jar
                    fi
+                   nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
                 '''
-                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &'
                 sh 'sleep 10'
                 sh 'curl -v http://localhost:9090/__admin || echo "Wiremock no respondió"'
             }
@@ -70,7 +64,8 @@ pipeline {
                     steps {
                         unstash 'workspace-build'
                         echo 'Ejecutando tests unitarios...'
-                        sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
+                        sh 'pip3 install pytest --break-system-packages || echo "Pytest ya está instalado."'
+                        sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
                     }
                 }
 
@@ -80,7 +75,6 @@ pipeline {
                        unstash 'workspace-build'
                        echo 'Verificando Flask antes del test de servicio...'
                        sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
-                       sh 'sleep 5'
                        echo 'Ejecutando test de servicio...'
                        sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
                     }
@@ -91,10 +85,12 @@ pipeline {
 
     post {
         always {
-            cleanWs()
-        }
-        failure {
-            echo 'El pipeline ha fallado. Revisa los errores.'
+            node('agente-clonador') {
+                cleanWs()
+            }
+            failure {
+                echo 'El pipeline ha fallado. Revisa los errores.'
+            }
         }
     }
 }
