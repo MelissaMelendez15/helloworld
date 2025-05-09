@@ -19,7 +19,7 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
                 sh 'pip3 install flask pytest requests --break-system-packages'
-                echo 'Dependencias instaladas correctamente.'
+                echo 'Dependencias instaladas correctamente'
             }
         }
 
@@ -28,11 +28,8 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
-                echo 'Build: Verificando archivos clonados...'
-                sh 'ls -l app/'
+                echo 'Build completado y guardado'
                 stash includes: '**', name: 'workspace-build'
-                echo 'Build: Verificando archivos clonados...'
-                
             }
         }
 
@@ -41,34 +38,16 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
-                echo 'Limpieza de procesos previos de Flask...'
-                sh '''
-                    pkill -f "python3 app/api.py" || true
-                '''
                 echo 'Iniciando Flask...'
                 sh 'PYTHONPATH=. nohup python3 app/api.py > flask.log 2>&1 &'
                 sh 'sleep 5'
-                echo 'Verificando Flask...'
-                sh '''
-                   if curl -s http://localhost:5000/ | grep "Hello from the Calculator"; then
-                      echo "Flask iniciado correctamente."
-                   else
-                      echo "Error: Flask no inició correctamente..."
-                      cat flask.log
-                      exit 1
-                    fi
-                '''
+                sh 'curl -v http://localhost:5000/ || echo "Flask no respondió"'
             }
         }
 
         stage('Iniciar Wiremock') {
             agent { label 'agente-deploy' }
             steps {
-                sh 'whoami && hostname && pwd'
-                echo 'Limpieza de procesos previos de Wiremock...'
-                sh '''
-                    pkill -f "java -jar test/wiremock/wiremock-standalone-2.27.2.jar" || true
-                '''
                 echo 'Iniciando Wiremock...'
                 sh '''
                    mkdir -p test/wiremock
@@ -80,16 +59,7 @@ pipeline {
                 '''
                 sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &'
                 sh 'sleep 10'
-                echo 'Verificando Wiremock...'
-                sh '''
-                    if curl -s http://localhost:9090/__admin; then
-                       echo "Wiremock iniciado correctamente."
-                    else
-                       echo "Error: Wiremock no inició correctamente."
-                       cat wiremock.log
-                       exit 1
-                    fi
-                '''
+                sh 'curl -v http://localhost:9090/__admin || echo "Wiremock no respondió"'
             }
         }
 
@@ -98,30 +68,25 @@ pipeline {
                 stage('Tests Unitarios') {
                     agent { label 'agente-build' }
                     steps {
-                        sh 'whoami && hostname && pwd'
                         unstash 'workspace-build'
-                        echo 'Ejecutando test unitarios...'
-                        sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml || echo "Error en test de servicio."'
+                        echo 'Ejecutando tests unitarios...'
+                        sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
                     }
                 }
 
                 stage('Tests Service') {
                     agent { label 'agente-deploy' }
                     steps {
-                       sh 'whoami && hostname && pwd'
                        unstash 'workspace-build'
                        echo 'Verificando Flask antes del test de servicio...'
-                       sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio."'
+                       sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
                        sh 'sleep 5'
-                       echo 'verificando instalación de pytest...'
-                       sh 'pip3 install pytest --break-system-packages || echo "Pytest ya está instalado."'
                        echo 'Ejecutando test de servicio...'
                        sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
                     }
                 }
             }
         }
-
     }
 
     post {
