@@ -89,9 +89,7 @@ pipeline {
             node('agente-clonador') {
                 cleanWs()
             }
-            archiveArtifacts artifacts: '**/*.xml', allowEmptyArchive: true
-            junit '**/result*.xml'
-            echo 'Resultados de pruebas publicados correctamente.'
+            
         }
         failure {
             echo 'El pipeline ha fallado. Revisa los errores.'
