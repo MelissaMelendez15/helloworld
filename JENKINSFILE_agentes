@@ -89,6 +89,7 @@ pipeline {
             node('agente-clonador') {
                 cleanWs()
             }
+            junit '**/results-*.xml'
         }
         failure {
             echo 'El pipeline ha fallado. Revisa los errores.'
