@@ -18,9 +18,8 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
-                sh 'ls -l app/'
                 sh 'pip3 install flask pytest requests --break-system-packages'
-                echo 'Dependencias instaladas correctamente'
+                echo 'Dependencias instaladas correctamente.'
             }
         }
 
@@ -32,7 +31,8 @@ pipeline {
                 echo 'Build: Verificando archivos clonados...'
                 sh 'ls -l app/'
                 stash includes: '**', name: 'workspace-build'
-                echo 'Build completado y guardado'
+                echo 'Build: Verificando archivos clonados...'
+                
             }
         }
 
