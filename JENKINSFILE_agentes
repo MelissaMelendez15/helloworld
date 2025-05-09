@@ -34,49 +34,57 @@ pipeline {
         }
 
         stage('Iniciar Flask y Wiremock') {
-            agent { label 'agente-deploy' }
-            steps {
-                sh 'whoami && hostname && pwd'
-                unstash 'workspace-build'
-                echo 'Iniciando Flask...'
-                sh 'PYTHONPATH=. nohup python3 app/api.py --host=0.0.0.0 --port=5000 > flask.log 2>&1 &'
-                sh 'sleep 5'
-                sh 'curl -v http://localhost:5000/ || echo "Flask no respondió"'
+    agent { label 'agente-deploy' }
+    environment {
+        FLASK_HOST = '0.0.0.0'
+        FLASK_PORT = '5000'
+        WIREMOCK_HOST = '0.0.0.0'
+        WIREMOCK_PORT = '9090'
+    }
+    steps {
+        sh 'whoami && hostname && pwd'
+        unstash 'workspace-build'
+        echo 'Iniciando Flask...'
+        sh 'PYTHONPATH=. nohup python3 app/api.py --host=$FLASK_HOST --port=$FLASK_PORT > flask.log 2>&1 &'
+        sh 'sleep 5'
+        sh 'curl -v http://$FLASK_HOST:$FLASK_PORT/ || echo "Flask no respondió"'
 
-                echo 'Iniciando Wiremock...'
-                sh '''
-                   mkdir -p test/wiremock
-                   if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
-                    curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar \
-                       -o test/wiremock/wiremock-standalone-2.27.2.jar
-                   fi
-                   nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
-                '''
-                sh 'sleep 10'
-                sh 'curl -v http://localhost:9090/__admin || echo "Wiremock no respondió"'
+        echo 'Iniciando Wiremock...'
+        sh '''
+            mkdir -p test/wiremock
+            if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
+                curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2.jar \
+                    -o test/wiremock/wiremock-standalone-2.27.2.jar
+            fi
+            nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port=$WIREMOCK_PORT --root-dir test/wiremock > wiremock.log 2>&1 &
+        '''
+        sh 'sleep 10'
+        sh 'curl -v http://$WIREMOCK_HOST:$WIREMOCK_PORT/__admin || echo "Wiremock no respondió"'
+    }
+}
+
+    stage('Tests en paralelo') {
+    parallel {
+        stage('Tests Unitarios') {
+            agent { label 'agente-build' }
+            steps {
+                unstash 'workspace-build'
+                echo 'Ejecutando tests unitarios...'
+                sh 'pytest test/unit --junitxml=result.xml'
             }
         }
-
-        stage('Tests en paralelo') {
-            parallel {
-                stage('Tests Unitarios') {
-                    agent { label 'agente-build' }
-                    steps {
-                        unstash 'workspace-build'
-                        echo 'Ejecutando tests unitarios...'
-                        sh 'pip3 install pytest --break-system-packages || echo "Pytest ya está instalado."'
-                        sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
-                    }
-                }
-
-                stage('Tests Service') {
-                    agent { label 'agente-deploy' }
-                    steps {
-                       unstash 'workspace-build'
-                       echo 'Verificando Flask antes del test de servicio...'
-                       sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
-                       echo 'Ejecutando test de servicio...'
-                       sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
+        stage('Tests Service') {
+            agent { label 'agente-deploy' }
+            environment {
+                FLASK_BASE_URL = "http://0.0.0.0:5000"
+                WIREMOCK_BASE_URL = "http://0.0.0.0:9090"
+            }
+            steps {
+                unstash 'workspace-build'
+                echo 'Verificando Flask antes del test de servicio...'
+                sh 'curl -v $FLASK_BASE_URL/ || echo "Flask no disponible antes del test de servicio"'
+                echo 'Ejecutando test de servicio...'
+                sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
                     }
                 }
             }
