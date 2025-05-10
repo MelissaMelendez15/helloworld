@@ -41,6 +41,8 @@ pipeline {
                 unstash 'workspace-build'
                 echo 'Iniciando Flask...'
                 sh 'nohup python3 app/api.py --host=0.0.0.0 --port=5000 > flask.log 2>&1 &'
+                sh 'netstat -tuln | grep 5000 || echo "El puerto 5000 no está abierto."'
+                sh 'cat flask.log || echo "El log de Flask está vacío."'
                 sh 'sleep 5'
                 sh 'curl -v http://localhost:5000/ || echo "Flask no respondió"'
 
