@@ -18,8 +18,8 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
-                sh 'python3 -m pip install --upgrade pip'
-                sh 'python3 -m pip install flask pytest requests'
+                sh 'python3 -m pip install --upgrade pip --break-system-packages'
+                sh 'python3 -m pip install flask pytest requests --break-system-packages'
                 echo 'Dependencias instaladas correctamente'
             }
         }
@@ -40,7 +40,7 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
                 echo 'Iniciando Flask...'
-                sh 'PYTHONPATH=. nohup python3 app/api.py --host=127.0.0.1 --port=5000 > flask.log 2>&1 &'
+                sh 'nohup python3 app/api.py --host=0.0.0.0 --port=5000 > flask.log 2>&1 &'
                 sh 'sleep 5'
                 sh 'curl -v http://localhost:5000/ || echo "Flask no respondió"'
 
@@ -90,7 +90,6 @@ pipeline {
             node('agente-clonador') {
                 cleanWs()
             }
-            
         }
         failure {
             echo 'El pipeline ha fallado. Revisa los errores.'
