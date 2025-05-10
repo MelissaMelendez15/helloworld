@@ -18,7 +18,8 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
-                sh 'pip3 install flask pytest requests --break-system-packages'
+                sh 'python3 -m pip install --upgrade pip'
+                sh 'python3 -m pip install flask pytest requests'
                 echo 'Dependencias instaladas correctamente'
             }
         }
