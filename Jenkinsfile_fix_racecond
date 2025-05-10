@@ -50,17 +50,22 @@ pipeline {
             steps {
                 echo 'Iniciando Flask y Wiremock'
                 sh '''
-                   PYTHONPATH=. nohup python3 app/api.py & 
-                   sleep 5
-                   for i in {1..5}; do
-                       curl -s http://localhost:5000/ && break || sleep 2
-                   done
+                   mkdir -p test/wiremock
+                   if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
+                      echo "Descargando Wiremock JAR..."
+                      curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar \
+                      -o test/wiremock/wiremock-standalone-2.27.2.jar
+                    fi
 
-                   nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock & 
-                   sleep 5
-                   for i in {1..5}; do
-                       curl -s http://localhost:9090/__admin && break || sleep 2
-                   done
+                    if pgrep -f "wiremock-standalone" > /dev/null; then
+                        pkill -f "wiremock-standalone"
+                    fi
+
+                    nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
+
+                    for i in {1..5}; do
+                        curl -s http://localhost:9090/__admin && break || sleep 2
+                    done
 
                 '''
             }
