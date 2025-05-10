@@ -45,7 +45,7 @@ pipeline {
                 '''
             }
         }
-
+ 
         stage('Iniciar Servicios') {
             steps {
                 echo 'Iniciando Flask y Wiremock'
