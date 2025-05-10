@@ -10,7 +10,7 @@ pipeline {
 
         stage('Clonar repositorio') {
             steps {
-                git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
+                git branch: 'feature_fix_racecond', url: 'https://github.com/MelissaMelendez15/helloworld.git'
                 sh 'ls -la'
             }
         }
@@ -21,15 +21,21 @@ pipeline {
             }
         }
 
+        stage('Build') {
+            steps {
+                echo 'Etapa de build vacia por ahora.'
+            }
+        }
+
          stage('Simular Carga del sistema') {
             steps {
                 echo 'Simulando carga de CPU...'
                 sh '''
                     for i in {1..4}; do
                         while :; do :; done &
-                        done
-                        sleep 30
-                        pkill -f "while :; do :; done"
+                    done
+                    sleep 30
+                    pkill -f "while :; do :; done"
 
                 '''
             }
@@ -38,11 +44,20 @@ pipeline {
         stage('Iniciar Servicios') {
             steps {
                 echo 'Iniciando Flask y Wiremock'
-                sh 'PYTHONPATH=. nohup python3 app/api.py &'
-                sh 'nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &'
-                sh 'sleep 5'
-                sh 'curl -v http://localhost:5000/ || exit 1'
-                sh 'curl -v http://localhost:9090/ || exit 1'
+                sh '''
+                   PYTHONPATH=. nohup python3 app/api.py & 
+                   sleep 5
+                   for i in {1..5}; do
+                       curl -s http://localhost:5000/ && break || sleep 2
+                   done
+
+                   nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock & 
+                   sleep 5
+                   for i in {1..5}; do
+                       curl -s http://localhost:9090/__admin && break || sleep 2
+                   done
+
+                '''
             }
         }
 
@@ -69,6 +84,7 @@ pipeline {
                    pkill -f "app/api.py" || echo "Flask ya estaba detenido"
                    pkill -f "wiremock-standalone" || echo "Wiremock ya estaba detenido"
                    pkill -f "while :; do :; done" || echo "Carga ya detenida"
+
                 '''
             }
         }
