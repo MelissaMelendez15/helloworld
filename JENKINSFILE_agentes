@@ -26,7 +26,7 @@ pipeline {
                 . venv/bin/activate
                 pip install --upgrade pip
                 pip install flask pytest requests
-                export PYTHONPATH=$PYTHONPATH:$(pwd)  # Agregar app al path
+                export PYTHONPATH=$PYTHONPATH:$(pwd)
                 '''
                 echo 'Dependencias instaladas correctamente en entorno virtual.'
                 stash includes: '**', name: 'workspace-build'
@@ -62,13 +62,21 @@ pipeline {
                 done
 
                 mkdir -p test/wiremock
-                if [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ]; then
-                    echo "Descargando Wiremock JAR..."
-                    curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2.jar -o test/wiremock/wiremock-standalone-2.27.2.jar
-                fi
+                echo "Descargando Wiremock JAR..."
+                curl -L -o test/wiremock/wiremock-standalone-2.27.2.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
 
                 nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
-                sleep 5
+
+                # Verificar que Wiremock está corriendo
+                for i in {1..10}; do
+                    if curl -s http://localhost:9090/; then
+                        echo "Wiremock está corriendo correctamente"
+                        break
+                    else
+                        echo "Esperando que Wiremock esté disponible..."
+                        sleep 2
+                    fi
+                done
                 '''
             }
         }
@@ -98,6 +106,7 @@ pipeline {
                         sh '. venv/bin/activate'
                         sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
                         sh 'curl -s http://localhost:5000/ || echo "Flask no está disponible."'
+                        sh 'curl -s http://localhost:9090/ || echo "Wiremock no está disponible."'
                         sh 'python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
                     }
                 }
