@@ -1,14 +1,13 @@
 pipeline {
     agent none
-
     stages {
         stage('Clonar repositorio') {
             agent { label 'agente-clonador' }
             steps {
+                checkout scm
                 sh 'whoami && hostname && pwd'
-                git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
                 sh 'ls -l'
-                stash includes: '**', name: 'workspace-clonado'
+                stash name: 'workspace', includes: '**'
                 echo 'Repositorio Clonado y guardado.'
             }
         }
@@ -19,17 +18,15 @@ pipeline {
                 skipDefaultCheckout true
             }
             steps {
-                unstash 'workspace-clonado'
+                unstash 'workspace'
                 sh 'whoami && hostname && pwd'
-                sh '''
-                python3 -m venv venv
-                . venv/bin/activate
-                pip install --upgrade pip
-                pip install flask pytest requests
-                export PYTHONPATH=$PYTHONPATH:$(pwd)
-                '''
+                sh 'python3 -m venv venv'
+                sh '. venv/bin/activate'
+                sh 'pip install --upgrade pip'
+                sh 'pip install flask pytest requests'
+                sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
                 echo 'Dependencias instaladas correctamente en entorno virtual.'
-                stash includes: '**', name: 'workspace-build'
+                stash name: 'workspace-build', includes: '**'
             }
         }
 
@@ -40,17 +37,14 @@ pipeline {
             }
             steps {
                 unstash 'workspace-build'
-                sh 'whoami && hostname && pwd'
-                echo 'Iniciando Flask y Wiremock...'
+                sh '. venv/bin/activate'
+                sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
 
+                // Iniciar Flask
                 sh '''
-                . venv/bin/activate
-                export PYTHONPATH=$PYTHONPATH:$(pwd)
-                
-                nohup python3 app/api.py --host=0.0.0.0 --port=5000 &
+                echo "Iniciando Flask..."
+                nohup python3 app/api.py --host=0.0.0.0 --port=5000 & 
                 sleep 5
-
-                # Verificar que Flask está corriendo
                 for i in {1..10}; do
                     if curl -s http://localhost:5000/; then
                         echo "Flask está corriendo correctamente"
@@ -60,14 +54,15 @@ pipeline {
                         sleep 2
                     fi
                 done
+                '''
 
+                // Iniciar Wiremock
+                sh '''
+                echo "Iniciando Wiremock..."
                 mkdir -p test/wiremock
-                echo "Descargando Wiremock JAR..."
                 curl -L -o test/wiremock/wiremock-standalone-2.27.2.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
-
                 nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
-
-                # Verificar que Wiremock está corriendo
+                sleep 5
                 for i in {1..10}; do
                     if curl -s http://localhost:9090/; then
                         echo "Wiremock está corriendo correctamente"
@@ -105,8 +100,27 @@ pipeline {
                         unstash 'workspace-build'
                         sh '. venv/bin/activate'
                         sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
-                        sh 'curl -s http://localhost:5000/ || echo "Flask no está disponible."'
-                        sh 'curl -s http://localhost:9090/ || echo "Wiremock no está disponible."'
+                        
+                        sh '''
+                        MAX_RETRIES=10
+                        COUNT=0
+                        while [ $COUNT -lt $MAX_RETRIES ]; do
+                            if curl -s http://localhost:5000/; then
+                                echo "Flask está disponible para tests"
+                                break
+                            else
+                                echo "Esperando que Flask esté disponible..."
+                                sleep 2
+                                COUNT=$((COUNT + 1))
+                            fi
+                        done
+
+                        if [ $COUNT -eq $MAX_RETRIES ]; then
+                            echo "Error: Flask no está disponible después de $MAX_RETRIES intentos."
+                            exit 1
+                        fi
+                        '''
+
                         sh 'python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
                     }
                 }
@@ -116,15 +130,14 @@ pipeline {
 
     post {
         always {
-            node('agente-clonador') {
-                cleanWs()
-            }
+            cleanWs()
+            echo 'Pipeline completado con éxito.'
         }
         failure {
             echo 'El pipeline ha fallado. Revisa los errores.'
         }
         success {
-            echo 'Pipeline completado con éxito.'
+            echo 'El pipeline se ha completado correctamente sin errores.'
         }
     }
 }
