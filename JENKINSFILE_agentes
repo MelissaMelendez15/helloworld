@@ -16,6 +16,7 @@ pipeline {
         stage('Instalar dependencias') {
             agent { label 'agente-build' }
             steps {
+                cleanWs()
                 unstash 'workspace-clonado'
                 sh 'whoami && hostname && pwd'
                 sh 'pip3 install --upgrade pip'
@@ -27,6 +28,7 @@ pipeline {
         stage('Build') {
             agent { label 'agente-build' }
             steps {
+                cleanWs() // Limpiar workspace antes de comenzar
                 unstash 'workspace-clonado'
                 sh 'whoami && hostname && pwd'
                 echo 'Build completado y guardado'
@@ -37,9 +39,10 @@ pipeline {
         stage('Iniciar Flask y Wiremock') {
             agent { label 'agente-deploy' }
             steps {
+                cleanWs() // Limpiar workspace antes de comenzar
+                unstash 'workspace-build'
                 echo 'Iniciando Flask y Wiremock en agente-deploy...'
                 sh 'whoami && hostname && pwd'
-                unstash 'workspace-build'
 
                 sh '''
                    nohup python3 app/api.py --host=0.0.0.0 --port=5000 &
@@ -79,6 +82,7 @@ pipeline {
                 stage('Tests Unitarios') {
                     agent { label 'agente-build' }
                     steps {
+                        cleanWs() // Limpiar workspace antes de comenzar
                         unstash 'workspace-build'
                         sh 'whoami && hostname && pwd'
                         echo 'Ejecutando tests unitarios...'
@@ -89,6 +93,7 @@ pipeline {
                 stage('Tests Service') {
                     agent { label 'agente-deploy' }
                     steps {
+                        cleanWs() // Limpiar workspace antes de comenzar
                         unstash 'workspace-build'
                         sh 'whoami && hostname && pwd'
                         echo 'Verificando Flask antes del test de servicio...'
