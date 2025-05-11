@@ -120,7 +120,6 @@ pipeline {
         always {
             node('agente-clonador') {
                 echo 'Pipeline completado con éxito.'
-                junit '/home/jenkins/workspace/Reto2_Agentes_Distribuidos/result.xml'
                 cleanWs()
                 echo 'Resultados JUnit publicados correctamente'
             }
