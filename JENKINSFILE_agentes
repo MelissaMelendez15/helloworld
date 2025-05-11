@@ -22,8 +22,8 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 sh 'python3 -m venv venv'
                 sh '. venv/bin/activate'
-                sh 'pip install --upgrade pip'
-                sh 'pip install flask pytest requests'
+                sh 'pip install --upgrade pip --break-system-packages'
+                sh 'pip install flask pytest requests --break-system-packages'
                 sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
                 echo 'Dependencias instaladas correctamente en entorno virtual.'
                 stash name: 'workspace-build', includes: '**'
@@ -100,25 +100,18 @@ pipeline {
                         unstash 'workspace-build'
                         sh '. venv/bin/activate'
                         sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
-                        
+
+                        // Verificar que Flask está disponible
                         sh '''
-                        MAX_RETRIES=10
-                        COUNT=0
-                        while [ $COUNT -lt $MAX_RETRIES ]; do
+                        for i in {1..10}; do
                             if curl -s http://localhost:5000/; then
                                 echo "Flask está disponible para tests"
                                 break
                             else
                                 echo "Esperando que Flask esté disponible..."
                                 sleep 2
-                                COUNT=$((COUNT + 1))
                             fi
                         done
-
-                        if [ $COUNT -eq $MAX_RETRIES ]; then
-                            echo "Error: Flask no está disponible después de $MAX_RETRIES intentos."
-                            exit 1
-                        fi
                         '''
 
                         sh 'python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
@@ -130,8 +123,10 @@ pipeline {
 
     post {
         always {
-            cleanWs()
-            echo 'Pipeline completado con éxito.'
+            node {
+                cleanWs()
+                echo 'Pipeline completado con éxito.'
+            }
         }
         failure {
             echo 'El pipeline ha fallado. Revisa los errores.'
