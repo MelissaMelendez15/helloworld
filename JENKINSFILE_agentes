@@ -15,6 +15,9 @@ pipeline {
 
         stage('Instalar dependencias') {
             agent { label 'agente-build' }
+            options {
+                skipDefaultCheckout true
+            }
             steps {
                 unstash 'workspace-clonado'
                 sh 'whoami && hostname && pwd'
@@ -26,6 +29,9 @@ pipeline {
 
         stage('Build') {
             agent { label 'agente-build' }
+            options {
+                skipDefaultCheckout true
+            }
             steps {
                 unstash 'workspace-clonado'
                 sh 'whoami && hostname && pwd'
@@ -36,6 +42,9 @@ pipeline {
 
         stage('Iniciar Flask y Wiremock') {
             agent { label 'agente-deploy' }
+            options {
+                skipDefaultCheckout true
+            }
             steps {
                 unstash 'workspace-build'
                 sh 'whoami && hostname && pwd'
@@ -68,6 +77,9 @@ pipeline {
             parallel {
                 stage('Tests Unitarios') {
                     agent { label 'agente-build' }
+                    options {
+                        skipDefaultCheckout true
+                    }
                     steps {
                         unstash 'workspace-build'
                         sh 'whoami && hostname && pwd'
@@ -78,6 +90,9 @@ pipeline {
 
                 stage('Tests Service') {
                     agent { label 'agente-deploy' }
+                    options {
+                        skipDefaultCheckout true
+                    }
                     steps {
                         unstash 'workspace-build'
                         sh 'whoami && hostname && pwd'
