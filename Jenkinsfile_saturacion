@@ -21,6 +21,12 @@ pipeline {
             }
         }
 
+        stage('Build') {
+            steps {
+                echo 'Etapa de build vacia por ahora.'
+            }
+        }
+
          stage('Simular Carga del sistema') {
             steps {
                 echo 'Simulando carga de CPU...'

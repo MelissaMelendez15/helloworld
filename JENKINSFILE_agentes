@@ -40,39 +40,40 @@ pipeline {
                 echo 'Iniciando Flask y Wiremock en agente-deploy...'
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
-                sh '''
-                   /opt/venv/bin/python3 app/api.py --host=0.0.0.0 --port=5000 &
-                   sleep 5
+           sh '''
+            source /opt/venv/bin/activate
 
-                   nohup /opt/venv/bin/python3 app/api.py --host=0.0.0.0 --port=5000 &
-                   sleep 5
+            # Iniciar Flask
+            nohup python3 app/api.py --host=0.0.0.0 --port=5000 &
+            sleep 5
 
-                   for i in {1..10}; do
-                       if curl -s http://localhost:5000/; then
-                          echo "Flask iniciando correctamente"
-                          break
-                        else 
-                           echo "Esperando que Flask inicie..."
-                           sleep 2
-                        fi
-                    done
+            for i in {1..10}; do
+                if curl -s http://localhost:5000/; then
+                    echo "Flask está corriendo correctamente"
+                    break
+                else
+                    echo "Esperando que Flask esté disponible..."
+                    sleep 2
+                fi
+            done
 
-                    mkdir -p test/wiremock
-                    [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ] && echo "Descargando Wiremock JAR..." && curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone-2.27.2.jar -o test/wiremock/wiremock-standalone-2.27.2.jar
+            # Iniciar Wiremock
+            mkdir -p test/wiremock
+            [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ] && echo "Descargando Wiremock JAR..." && curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2.jar -o test/wiremock/wiremock-standalone-2.27.2.jar
 
-                    nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
-                    sleep 5
+            nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
+            sleep 5
 
-                    for i in {1..10}; do
-                        if curl -s http://localhost:9090/__admin; then
-                            echo "Wimerock iniciando correctamente"
-                            break
-                        else
-                           echo "Esperando que Wiremock inicie..."
-                           sleep 2
-                       fi
-                    done
-                '''
+            for i in {1..10}; do
+                if curl -s http://localhost:9090/__admin; then
+                    echo "Wiremock está corriendo correctamente"
+                    break
+                else
+                    echo "Esperando que Wiremock esté disponible..."
+                    sleep 2
+                fi
+            done
+        '''
             }
         }
 
@@ -99,11 +100,11 @@ pipeline {
                         sh '''
                         for i in {1..10}; do
                             if curl -s http://localhost:5000/; then
-                               echo "Flask está corriendo correctamente"
-                               break
+                                echo "Flask está corriendo correctamente."
+                                break
                             else
-                               echo "Esperando que Flask esté disponible..."
-                               sleep 2
+                                echo "Esperando que Flask esté disponible..."
+                                sleep 2
                             fi
                         done
                         '''
