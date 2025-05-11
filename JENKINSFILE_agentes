@@ -23,7 +23,7 @@ pipeline {
                 sh 'whoami && hostname && pwd'
                 sh '''
                 python3 -m venv venv
-                source venv/bin/activate
+                . venv/bin/activate  # Cambiado a punto (.) para compatibilidad
                 pip install --upgrade pip
                 pip install flask pytest requests
                 '''
@@ -43,7 +43,7 @@ pipeline {
                 echo 'Iniciando Flask y Wiremock...'
 
                 sh '''
-                source venv/bin/activate
+                . venv/bin/activate
                 nohup python3 app/api.py --host=0.0.0.0 --port=5000 &
                 sleep 5
 
@@ -78,7 +78,7 @@ pipeline {
                     }
                     steps {
                         unstash 'workspace-build'
-                        sh 'source venv/bin/activate'
+                        sh '. venv/bin/activate'
                         sh 'python3 -m pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
                     }
                 }
@@ -90,7 +90,7 @@ pipeline {
                     }
                     steps {
                         unstash 'workspace-build'
-                        sh 'source venv/bin/activate'
+                        sh '. venv/bin/activate'
                         sh 'curl -s http://localhost:5000/ || echo "Flask no está disponible."'
                         sh 'python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
                     }
