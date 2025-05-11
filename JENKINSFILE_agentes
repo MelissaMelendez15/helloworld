@@ -18,11 +18,9 @@ pipeline {
             steps {
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
-                sh 'ls -l'
-                sh '/opt/venv/bin/pip install --upgrade pip'
-                sh '/opt/venv/bin/pip install flask pytest requests'
+                sh 'pip3 install --upgrade pip'
+                sh 'pip3 install flask pytest requests'
                 echo 'Dependencias instaladas correctamente'
-                stash includes: '**', name: 'workspace-build'
             }
         }
 
@@ -30,7 +28,7 @@ pipeline {
             agent { label 'agente-build' }
             steps {
                 sh 'whoami && hostname && pwd'
-                unstash 'workspace-build'
+                unstash 'workspace-clonado'
                 echo 'Build completado y guardado'
                 stash includes: '**', name: 'workspace-build'
             }
@@ -42,39 +40,36 @@ pipeline {
                 echo 'Iniciando Flask y Wiremock en agente-deploy...'
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
+
                 sh '''
-                    source /opt/venv/bin/activate
+                   nohup python3 app/api.py --host=0.0.0.0 --port=5000 &
+                   sleep 5
 
-                    # Iniciar Flask
-                    nohup /opt/venv/bin/python3 app/api.py --host=0.0.0.0 --port=5000 &
-                    sleep 5
+                   for i in {1..10}; do
+                       if curl -s http://localhost:5000/; then
+                           echo "Flask está corriendo correctamente"
+                           break
+                       else
+                           echo "Esperando que Flask esté disponible..."
+                           sleep 2
+                       fi
+                   done
 
-                    for i in {1..10}; do
-                        if curl -s http://localhost:5000/; then
-                            echo "Flask está corriendo correctamente"
-                            break
-                        else
-                            echo "Esperando que Flask esté disponible..."
-                            sleep 2
-                        fi
-                    done
+                   mkdir -p test/wiremock
+                   [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ] && echo "Descargando Wiremock JAR..." && curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2.jar -o test/wiremock/wiremock-standalone-2.27.2.jar
 
-                    # Iniciar Wiremock
-                    mkdir -p test/wiremock
-                    [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ] && echo "Descargando Wiremock JAR..." && curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2.jar -o test/wiremock/wiremock-standalone-2.27.2.jar
+                   nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
+                   sleep 5
 
-                    nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
-                    sleep 5
-
-                    for i in {1..10}; do
-                        if curl -s http://localhost:9090/__admin; then
-                            echo "Wiremock está corriendo correctamente"
-                            break
-                        else
-                            echo "Esperando que Wiremock esté disponible..."
-                            sleep 2
-                        fi
-                    done
+                   for i in {1..10}; do
+                       if curl -s http://localhost:9090/__admin; then
+                           echo "Wiremock está corriendo correctamente"
+                           break
+                       else
+                           echo "Esperando que Wiremock esté disponible..."
+                           sleep 2
+                       fi
+                   done
                 '''
             }
         }
@@ -87,7 +82,7 @@ pipeline {
                         sh 'whoami && hostname && pwd'
                         unstash 'workspace-build'
                         echo 'Ejecutando tests unitarios...'
-                        sh '/opt/venv/bin/python3 -m pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
+                        sh 'python3 -m pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
                     }
                 }
 
@@ -97,7 +92,6 @@ pipeline {
                         sh 'whoami && hostname && pwd'
                         unstash 'workspace-build'
                         echo 'Verificando Flask antes del test de servicio...'
-
                         sh '''
                         for i in {1..10}; do
                             if curl -s http://localhost:5000/; then
@@ -110,7 +104,7 @@ pipeline {
                         done
                         '''
                         echo 'Ejecutando test de servicio...'
-                        sh '/opt/venv/bin/python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
+                        sh 'python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
                     }
                 }
             }
