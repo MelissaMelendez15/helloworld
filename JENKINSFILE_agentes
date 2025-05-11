@@ -5,6 +5,7 @@ pipeline {
         stage('Clonar repositorio') {
             agent { label 'agente-clonador' }
             steps {
+                cleanWs()
                 sh 'whoami && hostname && pwd'
                 git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
                 sh 'ls -l'
@@ -16,8 +17,8 @@ pipeline {
         stage('Instalar dependencias') {
             agent { label 'agente-build' }
             steps {
-                cleanWs()
-                unstash 'workspace-clonado'
+                cleanWs() // Limpiar workspace antes de comenzar
+                unstash 'workspace-clonado' // Recuperar el código clonado
                 sh 'whoami && hostname && pwd'
                 sh 'pip3 install --upgrade pip'
                 sh 'pip3 install flask pytest requests'
@@ -29,7 +30,7 @@ pipeline {
             agent { label 'agente-build' }
             steps {
                 cleanWs() // Limpiar workspace antes de comenzar
-                unstash 'workspace-clonado'
+                unstash 'workspace-clonado' // Recuperar el código clonado
                 sh 'whoami && hostname && pwd'
                 echo 'Build completado y guardado'
                 stash includes: '**', name: 'workspace-build'
@@ -40,7 +41,7 @@ pipeline {
             agent { label 'agente-deploy' }
             steps {
                 cleanWs() // Limpiar workspace antes de comenzar
-                unstash 'workspace-build'
+                unstash 'workspace-build' // Recuperar el código del build
                 echo 'Iniciando Flask y Wiremock en agente-deploy...'
                 sh 'whoami && hostname && pwd'
 
@@ -82,7 +83,7 @@ pipeline {
                 stage('Tests Unitarios') {
                     agent { label 'agente-build' }
                     steps {
-                        cleanWs() // Limpiar workspace antes de comenzar
+                        cleanWs() 
                         unstash 'workspace-build'
                         sh 'whoami && hostname && pwd'
                         echo 'Ejecutando tests unitarios...'
@@ -93,7 +94,7 @@ pipeline {
                 stage('Tests Service') {
                     agent { label 'agente-deploy' }
                     steps {
-                        cleanWs() // Limpiar workspace antes de comenzar
+                        cleanWs() 
                         unstash 'workspace-build'
                         sh 'whoami && hostname && pwd'
                         echo 'Verificando Flask antes del test de servicio...'
