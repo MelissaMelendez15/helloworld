@@ -1,4 +1,4 @@
-pipeline {
+ppipeline {
     agent none
 
     stages {
@@ -16,10 +16,10 @@ pipeline {
         stage('Instalar dependencias') {
             agent { label 'agente-build' }
             steps {
-                sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
+                sh 'whoami && hostname && pwd'
                 sh 'pip3 install --upgrade pip'
-                sh 'pip3 install flask pytest requests --break-system-packages'
+                sh 'pip3 install flask pytest requests'
                 echo 'Dependencias instaladas correctamente'
             }
         }
@@ -27,8 +27,8 @@ pipeline {
         stage('Build') {
             agent { label 'agente-build' }
             steps {
-                sh 'whoami && hostname && pwd'
                 unstash 'workspace-clonado'
+                sh 'whoami && hostname && pwd'
                 echo 'Build completado y guardado'
                 stash includes: '**', name: 'workspace-build'
             }
@@ -40,6 +40,7 @@ pipeline {
                 echo 'Iniciando Flask y Wiremock en agente-deploy...'
                 sh 'whoami && hostname && pwd'
                 unstash 'workspace-build'
+
                 sh '''
                    nohup python3 app/api.py --host=0.0.0.0 --port=5000 &
                    sleep 5
@@ -55,7 +56,7 @@ pipeline {
                    done
 
                    mkdir -p test/wiremock
-                   [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ] && echo "Descargando Wiremock JAR..." && curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone-2.27.2.jar -o test/wiremock/wiremock-standalone-2.27.2.jar
+                   [ ! -f test/wiremock/wiremock-standalone-2.27.2.jar ] && echo "Descargando Wiremock JAR..." && curl -L https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2.jar -o test/wiremock/wiremock-standalone-2.27.2.jar
 
                    nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
                    sleep 5
@@ -78,18 +79,18 @@ pipeline {
                 stage('Tests Unitarios') {
                     agent { label 'agente-build' }
                     steps {
-                        sh 'whoami && hostname && pwd'
                         unstash 'workspace-build'
+                        sh 'whoami && hostname && pwd'
                         echo 'Ejecutando tests unitarios...'
-                        sh 'pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
+                        sh 'python3 -m pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
                     }
                 }
 
                 stage('Tests Service') {
                     agent { label 'agente-deploy' }
                     steps {
-                        sh 'whoami && hostname && pwd'
                         unstash 'workspace-build'
+                        sh 'whoami && hostname && pwd'
                         echo 'Verificando Flask antes del test de servicio...'
                         sh '''
                         for i in {1..10}; do
@@ -103,7 +104,7 @@ pipeline {
                         done
                         '''
                         echo 'Ejecutando test de servicio...'
-                        sh 'pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
+                        sh 'python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
                     }
                 }
             }
