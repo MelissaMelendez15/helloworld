@@ -119,9 +119,9 @@ pipeline {
     post {
         always {
             node('agente-clonador') {
-                cleanWs()
                 echo 'Pipeline completado con éxito.'
                 junit '**/results.xml'
+                cleanWs()
                 echo 'Resultados JUnit publicados correctamente'
             }
         }
