@@ -40,7 +40,6 @@ pipeline {
                 sh '. venv/bin/activate'
                 sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
 
-                // Iniciar Flask
                 sh '''
                 echo "Iniciando Flask..."
                 nohup python3 app/api.py --host=0.0.0.0 --port=5000 & 
@@ -55,8 +54,6 @@ pipeline {
                     fi
                 done
                 '''
-
-                // Iniciar Wiremock
                 sh '''
                 echo "Iniciando Wiremock..."
                 mkdir -p test/wiremock
@@ -100,8 +97,6 @@ pipeline {
                         unstash 'workspace-build'
                         sh '. venv/bin/activate'
                         sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
-
-                        // Verificar que Flask está disponible
                         sh '''
                         for i in {1..10}; do
                             if curl -s http://localhost:5000/; then
@@ -127,6 +122,8 @@ pipeline {
                 cleanWs()
                 echo 'Pipeline completado con éxito.'
             }
+            junit 'results-*.xml'
+            echo 'Resultados JUnit publicados correctamente'
         }
         failure {
             echo 'El pipeline ha fallado. Revisa los errores.'
