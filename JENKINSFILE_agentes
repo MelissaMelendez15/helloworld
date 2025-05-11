@@ -121,7 +121,7 @@ pipeline {
             node('agente-clonador') {
                 cleanWs()
                 echo 'Pipeline completado con éxito.'
-                junit 'results-*.xml'
+                junit '**/results.xml'
                 echo 'Resultados JUnit publicados correctamente'
             }
         }
