@@ -26,6 +26,12 @@ pipeline {
             }
         }
 
+        stage('Build') {
+            steps {
+                echo 'Etapa de build vacia por ahora.'
+            }
+        }
+
         stage('Iniciar Flask') {
             steps {
                 echo 'Iniciando Flask...'
