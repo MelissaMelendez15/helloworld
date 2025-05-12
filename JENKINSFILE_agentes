@@ -39,9 +39,11 @@ pipeline {
                 unstash 'workspace-build'
                 sh 'whoami && hostname && pwd'
                 sh '. venv/bin/activate'
-                sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
+                sh 'export PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/app'
 
                 sh '''
+                source venv/bin/activate
+                export PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/app
                 echo "Iniciando Flask..."
                 nohup python3 app/api.py --host=0.0.0.0 --port=5000 & 
                 sleep 5
