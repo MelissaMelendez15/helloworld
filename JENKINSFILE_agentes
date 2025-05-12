@@ -37,6 +37,7 @@ pipeline {
             }
             steps {
                 unstash 'workspace-build'
+                sh 'whoami && hostname && pwd'
                 sh '. venv/bin/activate'
                 sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
 
@@ -56,6 +57,7 @@ pipeline {
                 '''
                 sh '''
                 echo "Iniciando Wiremock..."
+                sh 'whoami && hostname && pwd'
                 mkdir -p test/wiremock
                 curl -L -o test/wiremock/wiremock-standalone-2.27.2.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
                 nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
@@ -82,6 +84,7 @@ pipeline {
                     }
                     steps {
                         unstash 'workspace-build'
+                        sh 'whoami && hostname && pwd'
                         sh '. venv/bin/activate'
                         sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
                         sh 'python3 -m pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
@@ -95,6 +98,7 @@ pipeline {
                     }
                     steps {
                         unstash 'workspace-build'
+                        sh 'whoami && hostname && pwd'
                         sh '. venv/bin/activate'
                         sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
                         sh '''
