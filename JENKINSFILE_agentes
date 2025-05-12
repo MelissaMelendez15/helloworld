@@ -43,7 +43,7 @@ pipeline {
 
                 sh '''
                 echo "Iniciando Flask..."
-                nohup python3 app/api.py --host=0.0.0.0 --port=5000 & 
+                nohup python3 -m flask --app app.api run --host=0.0.0.0 --port=5000 &
                 sleep 5
                 for i in {1..10}; do
                     if curl -s http://localhost:5000/; then
