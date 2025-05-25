@@ -8,6 +8,7 @@ __pycache__/
 result.xml
 coverage.xml
 flake8.out
+bandit.out
 htmlcov/
 .DS_Store
 .env
