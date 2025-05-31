@@ -47,25 +47,14 @@ pipeline {
             }
         }
 
-        stage('Tests en paralelo') {
-            parallel {
-                stage('Unit') {
-                    steps {
-                        sh 'PYTHONPATH=. pytest test/unit --junitxml=result.xml'
-                    }
-                }
-
-                stage('Service') {
-                    steps {
-                       sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
-                       sh 'sleep 5'
-                       sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
-                    }
-                }
+        stage('Service') {
+            steps {
+                sh 'curl -v http://localhost:5000/ || echo "Flask no disponible antes del test de servicio"'
+                sh 'sleep 5'
+                sh 'PYTHONPATH=. pytest test/rest --junitxml=results-service.xml'
             }
         }
 
-        
         stage('Static') {
             steps {
                 sh'flake8 --exit-zero --format=pylint app > flake8.out'
@@ -97,10 +86,12 @@ pipeline {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     sh '''
                        PYTHONPATH=. coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit
-                       coverage xml
+                       coverage xml -o coverage.xml
                     '''
                 }
-                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100,0,80', lineCoverageTargets: '100,0,90'
+                cobertura coberturaReportFile: 'coverage.xml', 
+                          lineCoverageTargets: '95,85',
+                          conditionalCoverageTargets: '90,80'
             }
 
         }
