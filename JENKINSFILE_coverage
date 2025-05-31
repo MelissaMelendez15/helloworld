@@ -7,11 +7,6 @@ pipeline {
                 sh 'pip3 install flask pytest requests --break-system-packages'
             }
         }
-         stage('Echo') {
-            steps {
-                echo '¡Hola desde Jenkins! Primera etapa OK'
-            }
-        }
 
         stage('Clonar repositorio') {
             steps {
@@ -70,6 +65,32 @@ pipeline {
             }
         }
 
+        stage('Static') {
+            steps {
+                sh'flake8 --exit-zero --format=pylint app > flake8.out'
+
+                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
+                qualityGates: [
+                    [threshold: 8, type: 'TOTAL', unstable: true],
+                    [threshold: 10, type: 'TOTAL', failBuild: true]
+                ]
+            }
+        }
+
+        stage('Security') {
+            steps {
+                sh '''
+                    bandit -r app -f custom -o bandit.out \
+                    --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}" || true
+                '''
+                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],
+                qualityGates: [
+                    [threshold: 2, type: 'TOTAL', unstable: true],
+                    [threshold: 4, type: 'TOTAL', failBuild: true]
+                ]
+            }
+        }
+
         stage('Coverage') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
@@ -83,35 +104,9 @@ pipeline {
 
         }
 
-        stage('Static') {
-            steps {
-                sh'flake8 --exit-zero --format=pylint app > flake8.out'
+        
 
-                 // Quality Gates configuradas para pruebas:
-                // El profesor usó originalmente el valor 11 como umbral de fallo.
-                // Aquí se ha ajustado a 12 para que el build no falle con 11 errores.
-
-                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
-                qualityGates: [
-                    [threshold: 10, type: 'TOTAL', unstable: true],
-                    [threshold: 12, type: 'TOTAL', unstable: false]
-                ]
-            }
-        }
-
-        stage('Security') {
-            steps {
-                sh '''
-                    bandit -r app -f custom -o bandit.out \
-                    --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}" || true
-                '''
-                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],
-                qualityGates: [
-                    [threshold: 1, type: 'TOTAL', unstable: true],
-                    [threshold: 2, type: 'TOTAL', unstable: false]
-                ]
-            }
-        }
+        
     }
 
     post {
