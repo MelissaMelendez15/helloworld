@@ -104,8 +104,8 @@ pipeline {
                     ./jmeter -n -t ~/Documentos/JENKINSFILE/helloworld/test/jmeter/flask.jmx -f -l ~/Documentos/JENKINSFILE/helloworld/test/jmeter/flask.jtl
                 '''
                 perfReport errorFailedThreshold: 0,
-                           errorUnstableThreshold: 0,
-                           sourceDataFile: 'test/jmeter/flask.jtl'
+                   errorUnstableThreshold: 0,
+                   sourceDataFiles: 'test/jmeter/flask.jtl'
             }
         }
 
