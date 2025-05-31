@@ -100,9 +100,10 @@ pipeline {
             steps {
                 sh '''
                     echo 'Inciando prueba de rendimiento con JMeter...'
-                    cd apache-jmeter-5.6.3/bin
+                    jmeter -n -t test/jmeter/flask.jmx -f -l test/jmeter/flask.jtl
                     ./jmeter -n -t ~/Documentos/JENKINSFILE/helloworld/test/jmeter/flask.jmx -f -l ~/Documentos/JENKINSFILE/helloworld/test/jmeter/flask.jtl
                 '''
+                
             }
         }
 
