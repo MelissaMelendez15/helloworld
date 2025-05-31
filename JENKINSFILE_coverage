@@ -98,14 +98,9 @@ pipeline {
 
         stage('Performance') {
             steps {
-                sh '''
-                    echo 'Inciando prueba de rendimiento con JMeter...'
-                    jmeter -n -t test/jmeter/flask.jmx -f -l test/jmeter/flask.jtl
-                    ./jmeter -n -t ~/Documentos/JENKINSFILE/helloworld/test/jmeter/flask.jmx -f -l ~/Documentos/JENKINSFILE/helloworld/test/jmeter/flask.jtl
-                '''
-                perfReport errorFailedThreshold: 0,
-                   errorUnstableThreshold: 0,
-                   sourceDataFiles: 'test/jmeter/flask.jtl'
+                echo 'Inciando prueba de rendimiento con JMeter...'
+                sh 'jmeter -n -t test/jmeter/flask.jmx -f -l test/jmeter/flask.jtl'
+                perfReport sourceDataFiles: 'test/jmeter/flask.jtl'
             }
         }
 
