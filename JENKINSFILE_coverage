@@ -65,6 +65,7 @@ pipeline {
             }
         }
 
+        
         stage('Static') {
             steps {
                 sh'flake8 --exit-zero --format=pylint app > flake8.out'
