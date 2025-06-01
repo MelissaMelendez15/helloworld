@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+        
         stage('Verificar workspace') {
             steps {
                 sh 'echo $WORKSPACE'
@@ -76,7 +77,7 @@ pipeline {
                        coverage xml -o coverage.xml
                     '''
                 }
-                
+
                 cobertura coberturaReportFile: '**/coverage.xml', 
                           lineCoverageTargets: '95,85',
                           conditionalCoverageTargets: '90,80',
