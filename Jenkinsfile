@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     stages {
-        
         stage('Verificar workspace') {
             steps {
                 sh 'echo $WORKSPACE'
