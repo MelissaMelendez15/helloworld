@@ -8,12 +8,6 @@ pipeline {
             }
         }
 
-        stage('echo') {
-           steps {
-                echo 'Test webhook activado con Jenkins 💥🧩'
-            }
-        }
-
         stage('Verificar workspace') {
             steps {
                 sh 'echo $WORKSPACE'
@@ -91,6 +85,7 @@ pipeline {
                 cobertura coberturaReportFile: 'coverage.xml', 
                           lineCoverageTargets: '95,85',
                           conditionalCoverageTargets: '90,80'
+                          onlyStable: false
             }
 
         }
