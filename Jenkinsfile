@@ -82,7 +82,7 @@ pipeline {
                        coverage xml -o coverage.xml
                     '''
                 }
-
+                //Quitarlo para entrega final
                 sh 'ls -la'
                 sh 'cat coverage.xml || echo "Archivo coverage.xml no encontrado"'
                 
