@@ -2,12 +2,6 @@ pipeline {
     agent any
 
     stages {
-         //stage('Instalar dependencias') {
-           //steps {
-                //sh 'pip3 install flask pytest requests --break-system-packages'
-            //}
-        //}
-
         stage('Verificar workspace') {
             steps {
                 sh 'echo $WORKSPACE'
@@ -82,9 +76,6 @@ pipeline {
                        coverage xml -o coverage.xml
                     '''
                 }
-                //Quitarlo para entrega final
-                sh 'ls -la'
-                sh 'cat coverage.xml || echo "Archivo coverage.xml no encontrado"'
                 
                 cobertura coberturaReportFile: '**/coverage.xml', 
                           lineCoverageTargets: '95,85',
