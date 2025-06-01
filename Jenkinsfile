@@ -82,7 +82,11 @@ pipeline {
                        coverage xml -o coverage.xml
                     '''
                 }
-                cobertura coberturaReportFile: 'coverage.xml', 
+
+                sh 'ls -la'
+                sh 'cat coverage.xml || echo "Archivo coverage.xml no encontrado"'
+                
+                cobertura coberturaReportFile: '**/coverage.xml', 
                           lineCoverageTargets: '95,85',
                           conditionalCoverageTargets: '90,80',
                           onlyStable: false
