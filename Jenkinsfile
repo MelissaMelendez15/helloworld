@@ -8,13 +8,6 @@ pipeline {
             }
         }
 
-        stage('Clonar repositorio') {
-            steps {
-                git branch: 'master', url: 'https://github.com/MelissaMelendez15/helloworld.git'
-                sh 'ls -la'
-            }
-        }
-
         stage('Verificar workspace') {
             steps {
                 sh 'echo $WORKSPACE'
