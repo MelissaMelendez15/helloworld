@@ -8,6 +8,12 @@ pipeline {
             }
         }
 
+        stage('echo') {
+           steps {
+                echo 'Test webhook activado con Jenkins 💥🧩'
+            }
+        }
+
         stage('Verificar workspace') {
             steps {
                 sh 'echo $WORKSPACE'
