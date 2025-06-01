@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     stages {
-         stage('Instalar dependencias') {
-           steps {
-                sh 'pip3 install flask pytest requests --break-system-packages'
-            }
-        }
+         //stage('Instalar dependencias') {
+           //steps {
+                //sh 'pip3 install flask pytest requests --break-system-packages'
+            //}
+        //}
 
         stage('Verificar workspace') {
             steps {
