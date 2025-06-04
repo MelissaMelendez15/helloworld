@@ -1,5 +1,6 @@
 pipeline {
     agent { 'agente-clonador'}
+    
     stages {
         stage('Verificar agente-clonador') {
             steps {
