@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'agente-clonador'}
+    agent { label 'agente-build'}
     
     stages {
         stage('Verificar agente-clonador') {
