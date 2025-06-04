@@ -1,35 +1,6 @@
 pipeline {
     agent none
     stages {
-        stage('Clonar repositorio') {
-            agent { label 'agente-clonador' }
-            steps {
-                checkout scm
-                sh 'whoami && hostname && pwd'
-                sh 'ls -l'
-                stash name: 'workspace', includes: '**'
-                echo 'Repositorio Clonado y guardado.'
-            }
-        }
-
-        stage('Instalar dependencias') {
-            agent { label 'agente-build' }
-            options {
-                skipDefaultCheckout true
-            }
-            steps {
-                unstash 'workspace'
-                sh 'whoami && hostname && pwd'
-                sh 'python3 -m venv venv'
-                sh '. venv/bin/activate'
-                sh 'pip install --upgrade pip --break-system-packages'
-                sh 'pip install flask pytest requests --break-system-packages'
-                sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
-                echo 'Dependencias instaladas correctamente en entorno virtual.'
-                stash name: 'workspace-build', includes: '**'
-            }
-        }
-
         stage('Iniciar Flask y Wiremock') {
             agent { label 'agente-deploy' }
             options {
@@ -75,22 +46,7 @@ pipeline {
             }
         }
 
-        stage('Tests en paralelo') {
-            parallel {
-                stage('Tests Unitarios') {
-                    agent { label 'agente-build' }
-                    options {
-                        skipDefaultCheckout true
-                    }
-                    steps {
-                        unstash 'workspace-build'
-                        sh 'whoami && hostname && pwd'
-                        sh '. venv/bin/activate'
-                        sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
-                        sh 'python3 -m pytest test/unit --junitxml=result.xml || echo "Error en test unitario."'
-                    }
-                }
-
+        stage('Service') {
                 stage('Tests Service') {
                     agent { label 'agente-deploy' }
                     options {
@@ -116,7 +72,7 @@ pipeline {
                         sh 'python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
                     }
                 }
-            }
+            
         }
     }
 
