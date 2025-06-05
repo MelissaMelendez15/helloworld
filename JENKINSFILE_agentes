@@ -59,7 +59,7 @@ pipeline {
         stage('Paralelas') {
             parallel {
                 stage('Static') {
-                    agent { label 'agente-build'}
+                    agent { label 'agente-deploy'}
                     options { skipDefaultCheckout true }
                     steps {
                         unstash 'workspace-build'
@@ -77,7 +77,7 @@ pipeline {
                 }
 
                 stage('Security') {
-                    agent { label 'agente-build'}
+                    agent { label 'agente-deploy'}
                     options { skipDefaultCheckout true }
                     steps {
                         unstash 'workspace-build'
@@ -96,7 +96,7 @@ pipeline {
                 }
 
                 stage('Coverage') {
-                    agent { label 'agente-build' }
+                    agent { label 'agente-deploy' }
                     options { skipDefaultCheckout true }
                     steps {
                         unstash 'workspace-build'
