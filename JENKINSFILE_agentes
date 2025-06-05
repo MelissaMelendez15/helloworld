@@ -100,7 +100,7 @@ pipeline {
             agent { label 'agente-build' }
             options { skipDefaultCheckout true }
             steps {
-                unstash 'source'
+                unstash 'workspace-build'
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                    
                     sh '''
