@@ -119,6 +119,21 @@ pipeline {
 
         }
 
+        stage('Performance') {
+            agent { label 'agente-deploy' }
+            options { skipDefaultCheckout true }
+            steps {
+                unstash 'workspace-build'
+                sh 'whoami && hostname && echo $WORKSPACE'
+
+                echo 'Inciando prueba de rendimiento con JMeter...'
+                
+                sh 'jmeter -n -t test/jmeter/flask.jmx -f -l test/jmeter/flask.jtl'
+                
+                perfReport sourceDataFiles: 'test/jmeter/flask.jtl'
+            }
+        }
+
     }
 
     post {
