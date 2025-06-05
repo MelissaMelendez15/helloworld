@@ -51,6 +51,7 @@ pipeline {
 
                     echo "Ejecutando pruebas de servicio..."
                     /opt/venv/bin/python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."
+                    stash name: 'test-report', includes: 'results-service.xml
                 '''
             }
         }
@@ -60,6 +61,7 @@ pipeline {
         always {
             node('agente-clonador') {
                 echo 'Pipeline completado con éxito.'
+                unstash 'test-report'
                 junit 'results-*.xml'
                 cleanWs()
             }
