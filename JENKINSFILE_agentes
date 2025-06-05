@@ -58,10 +58,13 @@ pipeline {
                     steps {
                         unstash 'workspace-build'
                         sh 'whoami && hostname && pwd'
-                        sh '. venv/bin/activate'
-                        sh 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
                         sh '''
-                        for i in {1..10}; do
+                            export PATH="/opt/venv/bin:$PATH"
+                            export PYTHONPATH=$PYTHONPATH:$(pwd)
+                            
+                            echo "Esperando que Flask esté disponible..."
+
+                            for i in {1..10}; do
                             if curl -s http://localhost:5000/; then
                                 echo "Flask está disponible para tests"
                                 break
@@ -71,7 +74,6 @@ pipeline {
                             fi
                         done
                         '''
-
                         sh 'python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."'
                     }
         }
