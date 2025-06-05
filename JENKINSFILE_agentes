@@ -63,7 +63,10 @@ pipeline {
                 unstash 'workspace-build'
                 sh 'whoami && hostname && echo $WORKSPACE'
                 
-                sh'flake8 --exit-zero --format=pylint app > flake8.out'
+                sh '''
+                   export PATH="/opt/venv/bin:$PATH"
+                   flake8 --exit-zero --format=pylint app > flake8.out
+                '''
 
                 recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
                 qualityGates: [
