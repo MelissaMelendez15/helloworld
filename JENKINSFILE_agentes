@@ -60,6 +60,7 @@ pipeline {
         always {
             node('agente-clonador') {
                 echo 'Pipeline completado con éxito.'
+                junit 'results-*.xml'
                 cleanWs()
             }
         }
