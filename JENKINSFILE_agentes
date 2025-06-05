@@ -2,60 +2,88 @@ pipeline {
     agent none
     stages {
         stage('Preparar Workspace') {
-           agent { label 'agente-clonador'}
+           agent { label 'agente-clonador' }
            steps {
               sh 'whoami && hostname && echo $WORKSPACE'
               stash name: 'workspace-build', includes: '**/**'
            }
         }
-        
+
         stage('Iniciar Flask y Wiremock') {
             agent { label 'agente-deploy' }
             options { skipDefaultCheckout true }
             steps {
-               unstash 'workspace-build'
-               sh 'whoami && hostname && echo $WORKSPACE'
-               sh '''
+                unstash 'workspace-build'
+                sh 'whoami && hostname && echo $WORKSPACE'
+
+                // Iniciar Flask
+                sh '''
                 export PATH="/opt/venv/bin:$PATH"
                 export PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/app
 
                 echo "Iniciando Flask..."
                 nohup python3 -m flask --app app.api run --host=0.0.0.0 --port=5000 > flask.log 2>&1 &
-            '''
+                '''
 
-            // Validar que Flask esté activo
-            sh '''
+                // Esperar a que Flask esté disponible
+                sh '''
                 for i in {1..10}; do
                   if curl -s http://localhost:5000/; then
-                  echo "Flask está corriendo correctamente"
-                break
-            else
-              echo "Esperando que Flask esté disponible..."
-            sleep 2
-        fi
-        done
-    '''
+                    echo "Flask está corriendo correctamente"
+                    break
+                  else
+                    echo "Esperando que Flask esté disponible..."
+                    sleep 2
+                  fi
+                done
+                '''
 
-    // Lanzar Wiremock
-        sh '''
-            echo "Iniciando Wiremock..."
-            mkdir -p test/wiremock
-            curl -L -o test/wiremock/wiremock-standalone-2.27.2.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
-            nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
-        '''
+                // Iniciar Wiremock
+                sh '''
+                echo "Iniciando Wiremock..."
+                mkdir -p test/wiremock
+                curl -L -o test/wiremock/wiremock-standalone-2.27.2.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
+                nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
+                '''
 
-    // Validar que Wiremock esté activo
-        sh '''
-            for i in {1..10}; do
-                if curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/calc/sqrt/64 | grep 200; then
-                echo "Wiremock está corriendo correctamente"
-            break
-        else
-          echo "Esperando que Wiremock esté disponible..."
-          sleep 2
-        fi
-        done
-    '''
+                // Esperar a que Wiremock esté disponible
+                sh '''
+                for i in {1..10}; do
+                  if curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/calc/sqrt/64 | grep 200; then
+                    echo "Wiremock está corriendo correctamente"
+                    break
+                  else
+                    echo "Esperando que Wiremock esté disponible..."
+                    sleep 2
+                  fi
+                done
+                '''
+            }
+        }
+
+        stage('Tests Service') {
+            agent { label 'agente-deploy' }
+            options { skipDefaultCheckout true }
+            steps {
+                unstash 'workspace-build'
+                sh 'whoami && hostname && pwd'
+
+                sh '''
+                export PYTHONPATH=$PYTHONPATH:$(pwd)
+
+                echo "Esperando que Flask esté disponible..."
+                for i in {1..10}; do
+                  if curl -s http://localhost:5000/; then
+                    echo "Flask está disponible para tests"
+                    break
+                  else
+                    echo "Esperando que Flask esté disponible..."
+                    sleep 2
+                  fi
+                done
+
+                /opt/venv/bin/python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."
+                '''
             }
         }
     }
