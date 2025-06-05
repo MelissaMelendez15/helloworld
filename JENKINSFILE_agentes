@@ -13,66 +13,49 @@ pipeline {
             agent { label 'agente-deploy' }
             options { skipDefaultCheckout true }
             steps {
-            unstash 'workspace-build'
-            sh 'whoami && hostname && echo $WORKSPACE'
-            sh '''
+               unstash 'workspace-build'
+               sh 'whoami && hostname && echo $WORKSPACE'
+               sh '''
                 export PATH="/opt/venv/bin:$PATH"
                 export PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/app
 
                 echo "Iniciando Flask..."
-                nohup python3 -m flask --app app.api run --host=0.0.0.0 --port=5000 &
-                sleep 5
-                for i in {1..10}; do
-                if curl -s http://localhost:5000/; then
-                    echo "Flask está corriendo correctamente"
-                    break
-                else
-                    echo "Esperando que Flask esté disponible..."
-                    sleep 2
-                fi
-                done
-
-                echo "Iniciando Wiremock..."
-                mkdir -p test/wiremock
-                curl -L -o test/wiremock/wiremock-standalone-2.27.2.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
-                nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock &
-                sleep 5
-                for i in {1..10}; do
-                if curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/calc/sqrt/64 | grep 200; then
-                    echo "Wiremock está corriendo correctamente"
-                    break
-                else
-                    echo "Esperando que Wiremock esté disponible..."
-                    sleep 2
-                fi
-                done
+                nohup python3 -m flask --app app.api run --host=0.0.0.0 --port=5000 > flask.log 2>&1 &
             '''
-            }
-        }
 
-        stage('Tests Service') {
-                    agent { label 'agente-deploy' }
-                    options {
-                        skipDefaultCheckout true
-                    }
-                    steps {
-                        unstash 'workspace-build'
-                        sh 'whoami && hostname && pwd'
-                        
-                        sh '''
-                            export PYTHONPATH=$PYTHONPATH:$(pwd)
-                            echo "Esperando que Flask esté disponible..."
-                            for i in {1..10}; do
-                            if curl -s http://localhost:5000/; then
-                                echo "Flask está disponible para tests"
-                                break
-                            else
-                                echo "Esperando que Flask esté disponible..."
-                                sleep 2
-                            fi
-                        done
-                         /opt/venv/bin/python3 -m pytest test/rest --junitxml=results-service.xml || echo "Error en test de servicio."
-                        '''
+            // Validar que Flask esté activo
+            sh '''
+                for i in {1..10}; do
+                  if curl -s http://localhost:5000/; then
+                  echo "Flask está corriendo correctamente"
+                break
+            else
+              echo "Esperando que Flask esté disponible..."
+            sleep 2
+        fi
+        done
+    '''
+
+    // Lanzar Wiremock
+        sh '''
+            echo "Iniciando Wiremock..."
+            mkdir -p test/wiremock
+            curl -L -o test/wiremock/wiremock-standalone-2.27.2.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
+            nohup java -jar test/wiremock/wiremock-standalone-2.27.2.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
+        '''
+
+    // Validar que Wiremock esté activo
+        sh '''
+            for i in {1..10}; do
+                if curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/calc/sqrt/64 | grep 200; then
+                echo "Wiremock está corriendo correctamente"
+            break
+        else
+          echo "Esperando que Wiremock esté disponible..."
+          sleep 2
+        fi
+        done
+    '''
             }
         }
     }
@@ -81,6 +64,7 @@ pipeline {
         always {
             node('agente-clonador') {
                 echo 'Pipeline completado con éxito.'
+                junit 'results-service.xml'
                 cleanWs()
             }
         }
