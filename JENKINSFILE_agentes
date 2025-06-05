@@ -75,6 +75,26 @@ pipeline {
                 ]
             }
         }
+
+        stage('Security') {
+            agent { label 'agente-build'}
+            options { skipDefaultCheckout true }
+            steps {
+                unstash 'workspace-build'
+                sh 'whoami && hostname && echo $WORKSPACE'
+                
+                sh '''
+                    export PATH="/opt/venv/bin:$PATH"
+                    bandit -r app -f custom -o bandit.out \
+                    --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}" || true
+                '''
+                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],
+                qualityGates: [
+                    [threshold: 2, type: 'TOTAL', unstable: true],
+                    [threshold: 4, type: 'TOTAL', failBuild: true]
+                ]
+            }
+        }
     }
 
     post {
