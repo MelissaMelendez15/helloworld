@@ -80,7 +80,7 @@ pipeline {
                     agent { label 'agente-build'}
                     options { skipDefaultCheckout true }
                     steps {
-                        unstash 'workspace-deploy'
+                        unstash 'workspace-build'
                         sh 'whoami && hostname && echo $WORKSPACE'
                         sh '''
                             export PATH="/opt/venv/bin:$PATH"
