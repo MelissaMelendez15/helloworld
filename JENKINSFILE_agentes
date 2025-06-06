@@ -96,7 +96,7 @@ pipeline {
                 }
 
                 stage('Coverage') {
-                    agent { label 'agente-deploy' }
+                    agent { label 'agente-build' }
                     options { skipDefaultCheckout true }
                     steps {
                         unstash 'workspace-build'
